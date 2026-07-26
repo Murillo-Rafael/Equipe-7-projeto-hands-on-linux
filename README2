@@ -1,1 +1,190 @@
 
+# 💡 SmartLamp
+
+![Status](https://img.shields.io/badge/Status-Protótipo-blue)
+![Plataforma](https://img.shields.io/badge/Plataforma-ESP32%20%2B%20Linux-orange)
+![Licença](https://img.shields.io/badge/Licença-Educacional-green)
+
+---
+
+## 📌 Descrição breve do sistema
+![Descrição](https://img.shields.io/badge/Descrição-Sistema%20Integrado-blueviolet)
+
+O **SmartLamp** é uma solução completa que integra hardware (ESP32 + LED + sensor LDR), firmware embarcado e um driver Linux. O objetivo é criar um dispositivo inteligente capaz de ler a luminosidade ambiente e controlar o brilho de um LED, expondo essas funcionalidades de forma transparente ao sistema operacional Linux por meio da interface **sysfs** (`/sys/kernel/smartlamp`).
+
+O projeto demonstra o fluxo completo: do hardware físico até um dispositivo virtual no kernel Linux, permitindo leitura e controle via espaço de usuário.
+
+---
+
+## 🏗️ Arquitetura Resumida
+![Arquitetura](https://img.shields.io/badge/Arquitetura-Camadas-informational)
+
+```
+┌─────────────────────────────────────────────────────┐
+│                 Espaço de Usuário                   │
+│         (aplicações, scripts, echo/cat)             │
+└───────────────────────┬─────────────────────────────┘
+                        │ sysfs
+┌───────────────────────▼─────────────────────────────┐
+│              Driver Kernel Linux                    │
+│         /sys/kernel/smartlamp/{led,ldr}             │
+└───────────────────────┬─────────────────────────────┘
+                        │ USB Serial
+┌───────────────────────▼─────────────────────────────┐
+│              Firmware ESP32                         │
+│     (leitura LDR + controle PWM do LED)             │
+└───────────────────────┬─────────────────────────────┘
+                        │ GPIO / ADC
+┌───────────────────────▼─────────────────────────────┐
+│              Hardware Físico                        │
+│         ESP32 + LED + LDR + Protoboard              │
+└─────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📁 Estrutura Simplificada
+![Estrutura](https://img.shields.io/badge/Estrutura-Organizada-success)
+
+```
+SmartLamp/
+├── firmware/
+│   └── SmartLamp.ino          # Código Arduino/ESP32
+├── driver/
+│   ├── smartlamp.c            # Módulo do kernel
+│   └── Makefile
+├── docs/
+│   └── diagrama_conexoes.png  # (opcional)
+└── README.md                  # Este arquivo
+```
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+![Tecnologias](https://img.shields.io/badge/Tecnologias-Stack-yellow)
+
+| Camada              | Tecnologia                          |
+|---------------------|-------------------------------------|
+| Hardware            | ESP32, LED, LDR, Protoboard         |
+| Firmware            | Arduino Framework (C/C++)           |
+| Comunicação         | USB Serial (UART)                   |
+| Sistema Operacional | Linux Kernel (módulo de kernel)     |
+| Interface           | sysfs (`/sys/kernel/smartlamp`)     |
+| Ferramentas         | Arduino IDE, GCC, Make              |
+
+---
+
+## ✨ Funcionalidades do Protótipo
+![Funcionalidades](https://img.shields.io/badge/Funcionalidades-Core-brightgreen)
+
+- ✅ Leitura da luminosidade ambiente via sensor LDR (normalizada de 0 a 100)
+- ✅ Controle de intensidade do LED via PWM (0% a 100%)
+- ✅ Comunicação serial com protocolo simples e legível
+- ✅ Comandos suportados:
+  - `GET_LDR` → retorna valor atual do sensor
+  - `GET_LED` → retorna estado atual do LED
+  - `SET_LED <0-100>` → define a intensidade do LED
+- ✅ Respostas padronizadas no formato `RES <COMANDO> <VALOR>`
+- ✅ Pronto para integração com driver Linux via sysfs
+
+---
+
+## 🚀 Como Executar o Sistema
+![Como Executar](https://img.shields.io/badge/Como%20Executar-Passo%20a%20Passo-blue)
+
+### 1. Firmware (ESP32)
+
+1. Abra o Arduino IDE
+2. Instale o suporte à placa ESP32 (Board Manager)
+3. Selecione a placa **ESP32 Dev Module** e a porta correta
+4. Abra o arquivo `SmartLamp.ino`
+5. Faça o upload do código
+6. Abra o Monitor Serial (9600 baud) e teste os comandos
+
+### 2. Driver Linux (após firmware funcionando)
+
+```bash
+cd driver
+make
+sudo insmod smartlamp.ko
+# Verificar:
+dmesg | tail
+ls /sys/kernel/smartlamp/
+```
+
+### 3. Testes via sysfs
+
+```bash
+# Ler LDR
+cat /sys/kernel/smartlamp/ldr
+
+# Ler estado do LED
+cat /sys/kernel/smartlamp/led
+
+# Definir brilho do LED (exemplo: 50%)
+echo 50 | sudo tee /sys/kernel/smartlamp/led
+```
+
+---
+
+## 📦 Dependências e Bibliotecas Utilizadas
+![Dependências](https://img.shields.io/badge/Dependências-Mínimas-orange)
+
+### Firmware (Arduino IDE)
+- **Arduino Core for ESP32** (Espressif)
+- Nenhuma biblioteca externa adicional (usa apenas funções nativas: `analogRead`, `analogWrite`, `Serial`)
+
+### Driver Linux
+- Kernel Linux 4.x ou superior (com suporte a módulos)
+- GCC
+- Make
+- Headers do kernel (`linux-headers`)
+
+### Ferramentas de Desenvolvimento
+- Arduino IDE 1.8+ ou 2.x
+- Cabo USB para ESP32
+- Terminal Linux
+
+---
+
+## ⚠️ Observações Importantes
+![Observações](https://img.shields.io/badge/Observações-Atenção-critical)
+
+- O pino do LED recomendado é o **GPIO 13** e o do LDR é o **GPIO 34** (ADC).
+- Use resistor de 220 Ω ~ 1 kΩ em série com o LED.
+- O LDR deve ser conectado em divisor de tensão (recomendado resistor de 10 kΩ).
+- A comunicação serial utiliza **9600 baud**.
+- O driver Linux assume que o ESP32 aparece como dispositivo serial (`/dev/ttyUSB0` ou similar).
+- Sempre remova o módulo com `sudo rmmod smartlamp` antes de recompilar.
+- Este é um projeto educacional — não deve ser usado em produção sem as devidas proteções.
+
+---
+
+## 📊 Status do Projeto
+![Status do Projeto](https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow)
+
+| Componente          | Status              | Observação                          |
+|---------------------|---------------------|-------------------------------------|
+| Hardware / Protótipo| ✅ Concluído        | Montagem validada                   |
+| Firmware ESP32      | ✅ Funcional        | Protocolo serial implementado       |
+| Driver Linux        | 🚧 Em desenvolvimento | Estrutura sysfs em andamento     |
+| Integração Completa | ⏳ Pendente         | Aguardando finalização do driver    |
+| Documentação        | ✅ Atualizada       | README completo                     |
+
+---
+
+## 👥 Autores
+![Autores](https://img.shields.io/badge/Autores-Equipe-purple)
+
+| Nome                          | Função                              |
+|-------------------------------|-------------------------------------|
+| *Adicionar nome*              | Firmware / Hardware                 |
+| *Adicionar nome*              | Driver Linux                        |
+| *Adicionar nome*              | Documentação / Testes               |
+
+> Substitua os nomes acima pelos membros reais da equipe.
+
+---
+
+**SmartLamp** — Do hardware físico ao dispositivo virtual no Linux.  
+Projeto desenvolvido com fins educacionais.
