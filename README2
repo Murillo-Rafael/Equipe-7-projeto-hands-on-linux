@@ -187,4 +187,4 @@ echo 50 | sudo tee /sys/kernel/smartlamp/led
 ---
 
 **SmartLamp** — Do hardware físico ao dispositivo virtual no Linux.  
-Projeto desenvolvido com fins educacionais.
+
