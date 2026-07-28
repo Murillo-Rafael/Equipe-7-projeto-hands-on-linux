@@ -4,8 +4,8 @@
 // ============================================================
 
 // --- Pinos ---
-const int ledPin = 2;    // Pino do LED (deve suportar PWM)
-const int ldrPin = 23;   // Pino do LDR (deve ser um pino ADC do ESP32)
+const int ledPin = 15;    // Pino do LED (deve suportar PWM)
+const int ldrPin = 2;   // Pino do LDR (deve ser um pino ADC do ESP32)
 
 // --- Variáveis de estado/calibração ---
 int ledValue = 10;        // Valor atual do LED (escala 0-100)
@@ -27,7 +27,6 @@ void loop() {
     // monta o comando completo e envia para processCommand()
     while (Serial.available() > 0) {
         char c = Serial.read();
-
         if (c == '\n') {
             processCommand(serialBuffer);
             serialBuffer = "";
@@ -35,6 +34,12 @@ void loop() {
             serialBuffer += c;
         }
     }
+    // while (1)
+    // {
+        // int ldrValue = ldrGetValue();
+        // Serial.printf("RES GET_LDR %d\n", ldrValue);
+    // }
+    
 }
 
 void processCommand(String command) {
