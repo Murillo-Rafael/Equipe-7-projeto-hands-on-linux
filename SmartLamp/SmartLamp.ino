@@ -15,10 +15,15 @@ int ldrMax   = 4000;      // Valor máximo bruto lido do LDR (calibrar em testes
 String serialBuffer = "";
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     pinMode(ledPin, OUTPUT);
     pinMode(ldrPin, INPUT);
     Serial.printf("SmartLamp Initialized.\n");
+    
+    processCommand("GET_LDR\n");
+
+    Serial.println("Passando para a funcao Loop");
+
 }
 
 // Função loop será executada infinitamente pelo ESP32
