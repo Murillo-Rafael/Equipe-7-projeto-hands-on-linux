@@ -4,8 +4,8 @@
 // ============================================================
 
 // --- Pinos ---
-const int ledPin = 15;    // Pino do LED (deve suportar PWM)
-const int ldrPin = 2;   // Pino do LDR (deve ser um pino ADC do ESP32)
+const int ledPin = 23;    // Pino do LED (deve suportar PWM)
+const int ldrPin = 4;   // Pino do LDR (deve ser um pino ADC do ESP32)
 
 // --- Variáveis de estado/calibração ---
 int ledValue = 10;        // Valor atual do LED (escala 0-100)
