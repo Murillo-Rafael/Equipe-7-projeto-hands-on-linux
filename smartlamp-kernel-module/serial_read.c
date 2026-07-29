@@ -23,12 +23,12 @@ MODULE_LICENSE("GPL");
 #define CP210X_DTR_ACTIVE       0x00000001
 #define CP210X_RTS_ACTIVE       0x00000040
 
-struct cp210x_flow_ctl {
-    __le32 control_handshake;
-    __le32 flow_replace;
-    __le32 xon_limit;
-    __le32 xoff_limit;
-};
+// struct cp210x_flow_ctl {
+    // __le32 control_handshake;
+    // __le32 flow_replace;
+    // __le32 xon_limit;
+    // __le32 xoff_limit;
+// };
 
 static char recv_line[MAX_RECV_LINE];              // Buffer para armazenar linha completa recebida
 static struct usb_device *smartlamp_device;        // Referência para o dispositivo USB
@@ -47,14 +47,8 @@ static int  usb_send_cmd(const char *cmd, int param);                           
 // Função para configurar os parâmetros seriais do CP2102 via Control-Messages
 static int smartlamp_config_serial(struct usb_device *dev)
 {
-    struct cp210x_flow_ctl flow = {
-        .control_handshake = cpu_to_le32(CP210X_DTR_ACTIVE),
-        .flow_replace = cpu_to_le32(CP210X_RTS_ACTIVE),
-        .xon_limit = 0,
-        .xoff_limit = 0,
-    };
     int ret;
-    __le32 baudrate = cpu_to_le32(115200); // 115200 bps
+    u32 baudrate = 115200; // 115200 bps
 
     printk(KERN_INFO "SmartLamp: Configurando a porta serial...\n");
 
@@ -101,29 +95,16 @@ static int smartlamp_config_serial(struct usb_device *dev)
     ret = usb_control_msg_send(dev, 0, CP210X_SET_FLOW, 0x41, 0, 0,
                                &flow, sizeof(flow), 1000, GFP_KERNEL);
     if (ret) {
-        /*
-         * Alguns clones/versões do CP2102 não aceitam SET_FLOW. A serial
-         * ainda pode operar normalmente sem essa configuração opcional.
-         */
-        printk(KERN_WARNING
-               "SmartLamp: CP2102 não aceitou controle de fluxo (%d); continuando\n",
-               ret);
+        printk(KERN_WARNING "SmartLamp: CP2102 não aceitou controle de fluxo (%d); continuando\n", ret);
     }
 
     // 5. Ativa DTR e RTS, como o driver cp210x faz ao abrir a porta.
-    ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
-                          CP210X_SET_MHS, 0x41,
-                          CP210X_CONTROL_DTR_RTS, 0, NULL, 0, 1000);
+    ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0), CP210X_SET_MHS, 0x41, CP210X_CONTROL_DTR_RTS, 0, NULL, 0, 1000);
     if (ret < 0) {
         printk(KERN_ERR "SmartLamp: Erro ao ativar DTR/RTS (%d)\n", ret);
         return ret;
     }
 
-    /*
-     * Dá tempo para o conversor aplicar a configuração antes do primeiro
-     * pacote. Alguns modelos de placa também reiniciam o ESP32 ao alterar
-     * as linhas de controle.
-     */
     msleep(1000);
 
     printk(KERN_INFO "SmartLamp: Serial configurada em 9600 8N1\n");
@@ -140,7 +121,6 @@ static struct usb_driver smartlamp_driver = {
 
 module_usb_driver(smartlamp_driver);
 
-// Executado quando o dispositivo é conectado na USB
 static int usb_probe(struct usb_interface *interface, const struct usb_device_id *id) {
     struct usb_endpoint_descriptor *usb_endpoint_in, *usb_endpoint_out;
     int ret;
@@ -149,12 +129,8 @@ static int usb_probe(struct usb_interface *interface, const struct usb_device_id
 
     // Detecta portas e aloca buffers de entrada e saída de dados na USB
     smartlamp_device = interface_to_usbdev(interface);
-    ret = usb_find_common_endpoints(interface->cur_altsetting,
-                                    &usb_endpoint_in, &usb_endpoint_out,
-                                    NULL, NULL);
-    if (ret) {
-        printk(KERN_ERR "SmartLamp: Endpoints bulk IN/OUT não encontrados (%d)\n",
-               ret);
+    ret = usb_find_common_endpoints(interface->cur_altsetting, &usb_endpoint_in, &usb_endpoint_out, NULL, NULL);
+    if (ret) { printk(KERN_ERR "SmartLamp: Endpoints bulk IN/OUT não encontrados (%d)\n", ret);
         return ret;
     }
 
@@ -233,23 +209,18 @@ static int usb_send_cmd(const char *cmd, int param)
     if (len < 0 || len >= usb_max_size)
         return -EMSGSIZE;
 
-    ret = usb_bulk_msg(smartlamp_device,
-                       usb_sndbulkpipe(smartlamp_device, usb_out),
-                       usb_out_buffer, len, &actual_size, 1000);
+    ret = usb_bulk_msg(smartlamp_device, usb_sndbulkpipe(smartlamp_device, usb_out), usb_out_buffer, len, &actual_size, 1000);
     if (ret) {
-        printk(KERN_ERR
-               "SmartLamp: Erro de código %d ao enviar comando\n", ret);
+        printk(KERN_ERR "SmartLamp: Erro de código %d ao enviar comando\n", ret);
         return ret;
     }
 
     if (actual_size != len) {
-        printk(KERN_ERR "SmartLamp: Envio incompleto (%d de %d bytes)\n",
-               actual_size, len);
+        printk(KERN_ERR "SmartLamp: Envio incompleto (%d de %d bytes)\n", actual_size, len);
         return -EIO;
     }
 
-    expected_len = snprintf(resp_expected, sizeof(resp_expected),
-                            "RES %s", cmd);
+    expected_len = snprintf(resp_expected, sizeof(resp_expected), "RES: %s", cmd);
     if (expected_len < 0 || expected_len >= sizeof(resp_expected))
         return -EMSGSIZE;
 

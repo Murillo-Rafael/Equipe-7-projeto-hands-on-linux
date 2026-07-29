@@ -354,9 +354,7 @@ static ssize_t attr_show(struct kobject *object,
     return sysfs_emit(buff, "%d\n", value);
 }
 
-static ssize_t attr_store(struct kobject *object,
-                          struct kobj_attribute *attr,
-                          const char *buff, size_t count)
+static ssize_t attr_store(struct kobject *object, struct kobj_attribute *attr, const char *buff, size_t count)
 {
     const char *attr_name = attr->attr.name;
     long value;
