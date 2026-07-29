@@ -19,11 +19,6 @@ void setup() {
     pinMode(ledPin, OUTPUT);
     pinMode(ldrPin, INPUT);
     Serial.printf("SmartLamp Initialized.\n");
-    
-    processCommand("GET_LDR\n");
-
-    Serial.println("Passando para a funcao Loop");
-
 }
 
 // Função loop será executada infinitamente pelo ESP32
