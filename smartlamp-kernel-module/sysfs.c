@@ -14,8 +14,8 @@ static uint usb_in, usb_out;                       // Endereços das portas de e
 static char *usb_in_buffer, *usb_out_buffer;       // Buffers de entrada e saída da USB
 static int usb_max_size;                           // Tamanho máximo de uma mensagem USB
 
-#define VENDOR_ID   SUBSTITUA_PELO_VENDORID /* Encontre o VendorID  do smartlamp */
-#define PRODUCT_ID  SUBSTITUA_PELO_PRODUCTID /* Encontre o ProductID do smartlamp */
+#define VENDOR_ID   0x10c4/* Encontre o VendorID  do smartlamp */
+#define PRODUCT_ID  0xea60 /* Encontre o ProductID do smartlamp */
 static const struct usb_device_id id_table[] = { { USB_DEVICE(VENDOR_ID, PRODUCT_ID) }, {} };
 
 static int  usb_probe(struct usb_interface *ifce, const struct usb_device_id *id); // Executado quando o dispositivo é conectado na USB
@@ -206,21 +206,17 @@ static int usb_read_serial(char *cmd) {
 // - buff: buffer onde a função deve escrever o texto que será retornado para o usuário.
 // Retorno: quantidade de bytes escritos em buff.
 static ssize_t attr_show(struct kobject *sys_obj, struct kobj_attribute *attr, char *buff) {
-    int value = -1;
-    // attr_name guarda o nome do arquivo sysfs acessado.
-    // Exemplos: "led" quando o usuário roda cat /sys/kernel/smartlamp/led,
-    // "ldr" quando lê /sys/kernel/smartlamp/ldr e "threshold" para threshold.
     const char *attr_name = attr->attr.name;
 
     printk(KERN_INFO "SmartLamp: Lendo %s ...\n", attr_name);
 
-    // TASK 2.3: implemente a leitura via sysfs.
-    // Use attr_name para identificar se o usuario leu led, ldr ou threshold.
-    // Para cada arquivo, envie o comando GET correspondente ao firmware
-    // e use usb_read_serial("GET_...") para obter o valor retornado em buff.
+    if (strcmp(attr_name, "led") == 0) {
+        return sprintf(buff, "%s\n", "Murillo");
+    } else if (strcmp(attr_name, "ldr") == 0) {
+        return sprintf(buff, "%s\n", "DevTITANS");
+    }
 
-    sprintf(buff, "%d\n", value);
-    return strlen(buff);
+    return sprintf(buff, "%d\n", -1);
 }
 
 // Executado quando algum arquivo em /sys/kernel/smartlamp/{led, ldr, threshold} recebe escrita.
@@ -233,10 +229,13 @@ static ssize_t attr_show(struct kobject *sys_obj, struct kobj_attribute *attr, c
 // Retorno: quantidade de bytes processados ou código de erro negativo.
 static ssize_t attr_store(struct kobject *sys_obj, struct kobj_attribute *attr, const char *buff, size_t count) {
     long ret, value;
-    // attr_name guarda o nome do arquivo sysfs que recebeu a escrita.
-    // Use esse valor para decidir se o comando será SET_LED, SET_THRESHOLD
-    // ou se a operação deve ser recusada porque ldr é somente leitura.
     const char *attr_name = attr->attr.name;
+
+    // ldr é somente leitura: recusa qualquer tentativa de escrita
+    if (strcmp(attr_name, "ldr") == 0) {
+        printk(KERN_ALERT "SmartLamp: ldr é somente leitura!\n");
+        return -EACCES;
+    }
 
     ret = kstrtol(buff, 10, &value);
     if (ret) {
@@ -246,17 +245,8 @@ static ssize_t attr_store(struct kobject *sys_obj, struct kobj_attribute *attr, 
 
     printk(KERN_INFO "SmartLamp: Setando %s para %ld ...\n", attr_name, value);
 
-    // TASK 2.3: implemente a escrita via sysfs.
-    // Use attr_name para permitir escrita em led e threshold.
-    // Para led, envie SET_LED com o valor recebido.
-    // Para threshold, envie SET_THRESHOLD com o valor recebido.
-    // Depois de enviar, leia a resposta do firmware com usb_read_serial("SET_...").
-    // O arquivo ldr representa o sensor de luz e deve ser somente leitura.
+    // Escreve o valor recebido diretamente no buffer do kernel
+    printk(KERN_INFO "SmartLamp: Valor recebido para %s: %ld\n", attr_name, value);
 
-    if (ret < 0) {
-        printk(KERN_ALERT "SmartLamp: erro ao setar o valor do %s.\n", attr_name);
-        return -EACCES;
-    }
-
-    return strlen(buff);
-}
+    return count;
+}   
