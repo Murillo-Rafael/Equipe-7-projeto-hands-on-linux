@@ -1,0 +1,248 @@
+# 💡 SmartLamp — Hands-On Linux | DevTITANS 10 — Equipe 07
+
+[![Status](https://img.shields.io/badge/Status-Protótipo%20Funcional-success?style=for-the-badge)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux)
+[![Plataforma](https://img.shields.io/badge/Plataforma-ESP32%20%2B%20Linux%20Kernel-blue?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux)
+[![Firmware](https://img.shields.io/badge/Firmware-Arduino%20(ESP32)-00979D?style=for-the-badge&logo=arduino&logoColor=white)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux/tree/main/SmartLamp)
+[![Driver](https://img.shields.io/badge/Driver-Linux%20Kernel%20Module-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux/tree/main/smartlamp-kernel-module)
+[![Licença](https://img.shields.io/badge/Licença-Educacional%20(GPL)-green?style=for-the-badge)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux)
+[![Comunicação](https://img.shields.io/badge/Comunicação-USB%20Serial%20(CP2102)-orange?style=for-the-badge&logo=usb&logoColor=white)](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux)
+
+---
+
+## 📌 Descrição
+
+O **SmartLamp** é uma solução completa de hardware + software que integra:
+
+- Um **firmware embarcado** no ESP32 (Arduino framework)
+- Um **driver de kernel Linux** (módulo USB) que expõe o dispositivo via **sysfs**
+
+O sistema permite ler a luminosidade ambiente (sensor LDR) e controlar a intensidade de um LED via PWM, tudo de forma transparente a partir do espaço de usuário Linux:
+
+```bash
+cat /sys/kernel/smartlamp/ldr
+echo 75 | sudo tee /sys/kernel/smartlamp/led
+```
+
+O objetivo é demonstrar o fluxo completo: do hardware físico até um dispositivo virtual no kernel Linux.
+
+---
+
+## 🏗️ Arquitetura
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Espaço de Usuário                        │
+│              (echo / cat / scripts / apps)                  │
+└───────────────────────────┬─────────────────────────────────┘
+                            │  sysfs
+┌───────────────────────────▼─────────────────────────────────┐
+│                 Driver Kernel Linux                         │
+│              /sys/kernel/smartlamp/{led,ldr}                │
+│         (USB bulk + control messages CP2102)                │
+└───────────────────────────┬─────────────────────────────────┘
+                            │  USB Serial (115200 8N1)
+┌───────────────────────────▼─────────────────────────────────┐
+│                   Firmware ESP32                            │
+│         (leitura LDR + controle PWM do LED)                 │
+└───────────────────────────┬─────────────────────────────────┘
+                            │  GPIO / ADC
+┌───────────────────────────▼─────────────────────────────────┐
+│                   Hardware Físico                           │
+│              ESP32 + LED + LDR + Protoboard                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Protocolo Serial
+
+| Comando           | Direção     | Resposta esperada      | Descrição                          |
+|-------------------|-------------|------------------------|------------------------------------|
+| `SET_LED <0-100>` | Host → ESP  | `RES SET_LED 1`        | Define intensidade do LED (PWM)    |
+| `GET_LED`         | Host → ESP  | `RES GET_LED <valor>`  | Retorna valor atual do LED         |
+| `GET_LDR`         | Host → ESP  | `RES GET_LDR <valor>`  | Retorna luminosidade (0-100)       |
+
+---
+
+## 📁 Estrutura do Repositório
+
+```
+Equipe-7-projeto-hands-on-linux/
+├── SmartLamp/
+│   └── SmartLamp.ino              # Firmware ESP32 (oficial)
+├── smartlamp-kernel-module/
+│   ├── smartlamp.c                # Driver completo (sysfs + USB + protocolo)
+│   ├── Makefile                   # Compilação do módulo
+│   ├── probe.c                    # Tarefa intermediária (detecção USB)
+│   ├── serial_write.c             # Tarefa intermediária (escrita serial)
+│   ├── serial_read.c              # Tarefa intermediária (leitura serial)
+│   └── sysfs.c                    # Tarefa intermediária (sysfs parcial)
+├── esp32/
+│   └── pinos.txt                  # Documentação de pinos
+├── arduinoinstall.sh              # Script de apoio à instalação Arduino
+├── README.md
+└── .gitignore
+```
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+| Camada              | Tecnologia                                       |
+|---------------------|--------------------------------------------------|
+| Hardware            | ESP32 + LED + LDR + Protoboard                   |
+| Firmware            | Arduino Framework (C/C++)                        |
+| Comunicação         | USB Serial (CP2102 – VID `0x10c4` / PID `0xea60`)|
+| Sistema Operacional | Linux Kernel Module (sysfs)                      |
+| Interface           | `/sys/kernel/smartlamp/{led,ldr}`                |
+| Ferramentas         | Arduino IDE, GCC, Make, linux-headers            |
+
+---
+
+## ✨ Funcionalidades Implementadas
+
+### Firmware (`SmartLamp.ino`)
+- ✅ Controle de LED via PWM (pino **GPIO 23**)
+- ✅ Leitura de sensor LDR (pino **GPIO 4** – ADC)
+- ✅ Normalização da leitura LDR para escala **0–100**
+- ✅ Protocolo serial completo (`SET_LED`, `GET_LED`, `GET_LDR`)
+- ✅ Respostas padronizadas `RES <COMANDO> <VALOR>`
+- ✅ Baud rate **115200**
+
+### Driver Kernel (`smartlamp.c`)
+- ✅ Detecção automática do chip **CP2102** (VID/PID)
+- ✅ Configuração da UART (115200 8N1) via control messages
+- ✅ Comunicação USB bulk (envio de comandos + leitura de respostas)
+- ✅ Interface **sysfs**:
+  - `led` → leitura e escrita (0–100)
+  - `ldr` → somente leitura
+- ✅ Mutex de proteção para acesso concorrente
+- ✅ Tratamento de erros, timeouts e respostas inválidas
+
+---
+
+## 🔌 Configuração de Hardware
+
+| Componente | Pino ESP32 | Observações                              |
+|------------|------------|------------------------------------------|
+| LED        | GPIO 23    | PWM – use resistor 220 Ω ~ 1 kΩ          |
+| LDR        | GPIO 4     | ADC – divisor de tensão com ~10 kΩ       |
+
+1. Conecte o ESP32 à máquina Linux via cabo USB.
+2. Monte o circuito no protoboard conforme a tabela acima.
+3. Certifique-se de que o chip serial seja o **CP2102** (VID `10c4` / PID `ea60`).
+
+---
+
+## 🚀 Instalação e Uso
+
+### 1. Firmware ESP32
+
+1. Abra o **Arduino IDE**.
+2. Instale o suporte à placa ESP32 (Board Manager → “esp32 by Espressif”).
+3. Selecione a placa **ESP32 Dev Module** e a porta correta.
+4. Abra o arquivo:
+   ```
+   SmartLamp/SmartLamp.ino
+   ```
+5. Faça o upload (`Sketch → Upload`).
+6. (Opcional) Abra o Monitor Serial em **115200 baud** e teste os comandos manualmente.
+
+### 2. Driver Linux
+
+```bash
+# Clone o repositório
+git clone https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux.git
+cd Equipe-7-projeto-hands-on-linux/smartlamp-kernel-module
+
+# Compile
+make
+
+# Carregue o módulo (ESP32 já deve estar conectado)
+sudo insmod smartlamp.ko
+
+# Verifique se o driver carregou
+dmesg | tail
+ls /sys/kernel/smartlamp/
+```
+
+### 3. Interação via sysfs
+
+```bash
+# Ler luminosidade (LDR)
+cat /sys/kernel/smartlamp/ldr
+
+# Ler estado atual do LED
+cat /sys/kernel/smartlamp/led
+
+# Definir brilho do LED (0 a 100)
+echo 50 | sudo tee /sys/kernel/smartlamp/led
+echo 100 | sudo tee /sys/kernel/smartlamp/led
+echo 0   | sudo tee /sys/kernel/smartlamp/led
+
+# Ver logs do driver
+dmesg | tail -n 30
+
+# Remover o módulo
+sudo rmmod smartlamp
+```
+
+---
+
+## 📦 Dependências
+
+### Firmware
+- Arduino IDE 1.8+ ou 2.x
+- Arduino Core for ESP32 (Espressif)
+- Nenhuma biblioteca externa adicional
+
+### Driver
+- Kernel Linux 4.x ou superior (com suporte a módulos)
+- `linux-headers-$(uname -r)`
+- GCC e Make
+- Dispositivo USB com chip **CP2102**
+
+---
+
+## ⚠️ Observações Importantes
+
+- O firmware e o driver utilizam **115200 baud / 8N1**.
+- O atributo `ldr` é **somente leitura**.
+- Sempre execute `sudo rmmod smartlamp` antes de recompilar o módulo.
+- O driver assume que o ESP32 aparece como dispositivo USB com VID/PID do CP2102.
+- Este é um **projeto educacional** — não deve ser usado em produção sem as devidas proteções e tratamento de erros adicionais.
+
+---
+
+## 📊 Status do Projeto
+
+| Componente              | Status              | Observação                                      |
+|-------------------------|---------------------|-------------------------------------------------|
+| Hardware / Protótipo    | ✅ Concluído        | Montagem validada                               |
+| Firmware ESP32          | ✅ Funcional        | Protocolo serial completo                       |
+| Driver Kernel (sysfs)   | ✅ Funcional        | `smartlamp.c` integrado                         |
+| Integração Completa     | ✅ Funcional        | Comunicação Host ↔ ESP32 via USB                |
+| Documentação            | ✅ Atualizada       | README fiel ao código                           |
+
+---
+
+## 👥 Equipe 07 — DevTITANS 10
+
+| Nome                                   | Função                              |
+|----------------------------------------|-------------------------------------|
+| **Abel Freire de Andrade**             | Firmware / Hardware                 |
+| **Murillo Rafael de Alcântara Mota**   | Driver Linux / Mantenedor do Projeto|
+| **Emanuel Tiago de Souza da Silva**    | Integração / Validação / Testes     |
+| **Sergio Ademir Rocha do Carmo**       | Documentação                        |
+
+---
+
+## 📞 Contato
+
+Para dúvidas, sugestões ou feedback sobre o projeto:
+
+- Repositório: [https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux](https://github.com/Murillo-Rafael/Equipe-7-projeto-hands-on-linux)
+
+---
+
+**SmartLamp** — Do hardware físico ao dispositivo virtual no Linux.  
+*Hands-On do módulo de Linux | DevTITANS 10 — Equipe 07*
+```
