@@ -1,6 +1,3 @@
-Aqui está o relatório ajustado. As linhas do texto corrido e as justificativas dos tópicos foram reescritas com **comprimentos de linha padronizados**, mantendo o alinhamento visual proporcional e equilibrado ao longo de todo o documento:
-
-```markdown
 # Relatório SmartLamp – Hands-On Linux | Equipe 07 – DevTITANS
 
 ---
@@ -227,7 +224,6 @@ sudo dmesg | grep -i smartlamp
 
 ```
 
-
 *Saída obtida no log:*
 ```text
 SmartLamp: Dispositivo conectado ...
@@ -236,8 +232,6 @@ SmartLamp: Baud rate configurado para 9600
 usbcore: registered new interface driver smartlamp
 
 ```
-
-
 
 ---
 
