@@ -36,7 +36,8 @@
 
 ### 1. Objetivo
 
-Montar o protótipo físico baseado na placa ESP32, realizar o carregamento (*upload*) do firmware desenvolvido e validar seu funcionamento via monitor serial, utilizando comandos para ajustar a intensidade luminosa de um LED e ler os valores analógicos de um sensor LDR.
+Montar o protótipo físico baseado na placa ESP32, realizar o carregamento (*upload*) do firmware desenvolvido e validar seu funcionamento 
+via monitor serial, utilizando comandos para ajustar a intensidade luminosa de um LED e ler os valores analógicos de um sensor LDR.
 
 ### 2. Materiais Utilizados
 
@@ -60,7 +61,8 @@ Montar o protótipo físico baseado na placa ESP32, realizar o carregamento (*up
 
 A montagem seguiu o esquemático do protótipo utilizando a porta `GPIO23` para controle do LED e a porta `GPIO04` para leitura analógica do LDR.
 
-* **Ajuste de Pinos no Firmware (`smartlamp.ino`):** Foi utilizado como base o código fornecido em aula. Ajustaram-se os pinos originais para `GPIO04` (LDR) e `GPIO23` (LED) por duas razões principais:
+* **Ajuste de Pinos no Firmware (`smartlamp.ino`):** Foi utilizado como base o código fornecido em aula.
+    Ajustaram-se os pinos originais para `GPIO04` (LDR) e `GPIO23` (LED) por duas razões principais:
 1. O pino proposto inicialmente para o LDR não estava respondendo corretamente por necessitar explicitamente de um canal ADC funcional.
 2. A alteração permitiu uma organização visual e física superior dos jumpers na protoboard.
 
@@ -85,7 +87,8 @@ A montagem seguiu o esquemático do protótipo utilizando a porta `GPIO23` para 
 
 Com o Monitor Serial aberto a **115200 baud**, realizaram-se os testes funcionais:
 
-* **Comando `SET_LED`:** Enviaram-se valores de acionamento (`0`, `50` e `100`). O LED respondeu adequadamente variando sua intensidade luminosa de acordo com a taxa informada.
+* **Comando `SET_LED`:** Enviaram-se valores de acionamento (`0`, `50` e `100`). O LED respondeu adequadamente variando 
+    sua intensidade luminosa de acordo com a taxa informada.
 * **Comando `GET_LDR`:** Foram efetuadas medições de luminosidade do ambiente:
 * **Luz ambiente do laboratório (sem obstrução):** Valores de resposta na faixa de `80` a `90`.
 * **Sensor coberto/obstruído:** Valores de resposta na faixa de `0` a `15`.
@@ -96,7 +99,8 @@ Com o Monitor Serial aberto a **115200 baud**, realizaram-se os testes funcionai
 
 ### 5. Problemas Encontrados e Soluções
 
-* **Largura do ESP32 na Protoboard:** Devido à largura do ESP32, ao encaixá-lo em uma protoboard padrão, não sobrava espaço útil de barramento em ambos os lados.
+* **Largura do ESP32 na Protoboard:** Devido à largura do ESP32, ao encaixá-lo em uma protoboard padrão, não sobrava espaço 
+    útil de barramento em ambos os lados.
 * *Solução:* Utilizaram-se **duas protoboards lado a lado**, encaixando a placa no meio e liberando os pinos de conexão de ambos os lados.
 
 
@@ -109,7 +113,8 @@ Com o Monitor Serial aberto a **115200 baud**, realizaram-se os testes funcionai
 
 ### 6. Resultado da Atividade
 
-Atividade concluída com sucesso. O protótipo atendeu a todos os requisitos de hardware, apresentando resposta imediata aos comandos seriais e leitura coerente dos níveis de luminosidade incidentes no LDR.
+Atividade concluída com sucesso. O protótipo atendeu a todos os requisitos de hardware, apresentando
+resposta imediata aos comandos seriais e leitura coerente dos níveis de luminosidade incidentes no LDR.
 
 ---
 
@@ -121,7 +126,8 @@ Atividade concluída com sucesso. O protótipo atendeu a todos os requisitos de 
 
 ### 1. Objetivo
 
-Compilar o driver mínimo do kernel Linux (`probe.ko`), associá-lo ao ponteiro USB CP2102 do ESP32 e confirmar a execução bem-sucedida da função `probe()` no momento da conexão do dispositivo.
+Compilar o driver mínimo do kernel Linux (`probe.ko`), associá-lo ao ponteiro USB CP2102 do ESP32 
+e confirmar a execução bem-sucedida da função `probe()` no momento da conexão do dispositivo.
 
 ---
 
@@ -195,7 +201,8 @@ O processo gerou com sucesso o arquivo de módulo do kernel: **`probe.ko`**.
 
 ### 5. Descarregamento do Driver Padrão
 
-Como o kernel Linux carrega o driver genérico `cp210x` por padrão ao conectar a placa, foi necessário removê-lo temporariamente para permitir que o novo driver assumisse o controle do dispositivo:
+Como o kernel Linux carrega o driver genérico `cp210x` por padrão ao conectar a placa, 
+foi necessário removê-lo temporariamente para permitir que o novo driver assumisse o controle do dispositivo:
 
 ```bash
 sudo modprobe -r cp210x
@@ -221,28 +228,23 @@ sudo insmod ./probe.ko
 
 ```
 
-
 2. **Verificação da presença do módulo:**
 ```bash
 lsmod | grep '^probe'
 
 ```
 
-
 *Retorno:*
 ```text
-probe                  12288  0
+probe             12288  0
 
 ```
-
 
 3. **Verificação dos logs do Kernel (`dmesg`):**
 ```bash
 sudo dmesg | grep -i smartlamp
 
 ```
-
-
 *Saída obtida no log:*
 ```text
 SmartLamp: Dispositivo conectado ...
@@ -251,9 +253,6 @@ SmartLamp: Baud rate configurado para 9600
 usbcore: registered new interface driver smartlamp
 
 ```
-
-
-
 ---
 
 ### 7. Resultado da Atividade
@@ -261,7 +260,6 @@ usbcore: registered new interface driver smartlamp
 A atividade foi concluída com sucesso. O driver mínimo foi compilado e inserido no kernel Linux, assumindo o controle do conversor CP2102 do ESP32 e executando a função `probe()` corretamente.
 
 ---
-
 ---
 
 ## 📟 Atividade 2.1.2 — Fazer o Driver Ler uma Mensagem pela Porta Serial
@@ -270,7 +268,8 @@ A atividade foi concluída com sucesso. O driver mínimo foi compilado e inserid
 
 ### 1. Implementação
 
-Para permitir que o módulo do kernel realize a leitura de dados vindos da porta serial USB do ESP32, utilizou-se a infraestrutura de URBs (*USB Request Blocks*) de forma assíncrona/síncrona (via `usb_bulk_msg` ou *bulk in endpoints*).
+Para permitir que o módulo do kernel realize a leitura de dados vindos da porta serial USB do ESP32, utilizou-se 
+a infraestrutura de URBs (*USB Request Blocks*) de forma assíncrona/síncrona (via `usb_bulk_msg` ou *bulk in endpoints*).
 
 O driver aloca um buffer de recepção no espaço de memória do kernel (`kmalloc`) e submete a requisição de leitura ao *endpoint* de entrada (*IN endpoint*) do dispositivo CP2102.
 
@@ -278,8 +277,10 @@ O driver aloca um buffer de recepção no espaço de memória do kernel (`kmallo
 
 ### 2. Dificuldades com Buffers e Strings em Baixo Nível (Kernel Space)
 
-* **Gerenciamento de Memória no Kernel:** Diferente do ambiente de usuário (*userspace*), não se pode utilizar funções padronizadas como `malloc` ou `printf`. A alocação precisa ser feita com alocadores de kernel (`kmalloc` com flags como `GFP_KERNEL` ou `GFP_ATOMIC`).
-* **Tratamento de Terminação de String (`\0`):** A leitura serial via USB retorna um fluxo de bytes brutos sem garantias de terminação por caractere nulo (`\0`). Foi necessário tratar manualmente o tamanho do buffer lido, garantindo que a string não ultrapasse os limites alocados e prevenindo falhas de memória (*buffer overflow* ou *kernel oops*).
+* **Gerenciamento de Memória no Kernel:** Diferente do ambiente de usuário (*userspace*), não se pode utilizar funções padronizadas como `malloc` ou `printf`. 
+    A alocação precisa ser feita com alocadores de kernel (`kmalloc` com flags como `GFP_KERNEL` ou `GFP_ATOMIC`).
+* **Tratamento de Terminação de String (`\0`):** A leitura serial via USB retorna um fluxo de bytes brutos sem garantias de terminação por caractere nulo (`\0`).
+    Foi necessário tratar manualmente o tamanho do buffer lido, garantindo que a string não ultrapasse os limites alocados e prevenindo falhas de memória (*buffer overflow* ou *kernel oops*).
 * **Concorrência e Sincronismo:** Garantir que o buffer de leitura não seja sobrescrito enquanto o kernel processa os dados recebidos.
 
 ---
@@ -301,7 +302,8 @@ O driver aloca um buffer de recepção no espaço de memória do kernel (`kmallo
 
 ### 1. Implementação
 
-A escrita de mensagens na porta serial via driver de kernel foi desenvolvida utilizando a função de transferência em bloco `usb_bulk_msg` para o *endpoint* de saída (*OUT endpoint*) do CP2102. O driver converte o comando em formato texto (por exemplo, `SET_LED 100\n`) em um buffer de bytes e envia o pacote diretamente ao firmware do ESP32 através do barramento USB.
+A escrita de mensagens na porta serial via driver de kernel foi desenvolvida utilizando a função de transferência em bloco `usb_bulk_msg` para o *endpoint* de saída (*OUT endpoint*) do CP2102.
+O driver converte o comando em formato texto (por exemplo, `SET_LED 100\n`) em um buffer de bytes e envia o pacote diretamente ao firmware do ESP32 através do barramento USB.
 
 ---
 
@@ -309,7 +311,8 @@ A escrita de mensagens na porta serial via driver de kernel foi desenvolvida uti
 
 * **Formatação de Comandos:** A necessidade de formatar strings no kernel exigiu o uso de `snprintf` / `sprintf` do ambiente do kernel para montar o comando correto a ser enviado via USB.
 * **Incompatibilidade de Contexto (User to Kernel Space):** Garantir o transporte seguro do buffer fornecido pela camada superior até o envio pelo subsistema USB.
-* **Timeouts de Transmissão:** Tratar cenários onde a porta serial do microcontrolador está ocupada, definindo *timeouts* adequados na chamada `usb_bulk_msg` para evitar o bloqueio da thread do kernel.
+* **Timeouts de Transmissão:** Tratar cenários onde a porta serial do microcontrolador está ocupada, definindo *timeouts* adequados 
+    na chamada `usb_bulk_msg` para evitar o bloqueio da thread do kernel.
 
 ---
 
@@ -330,7 +333,8 @@ A escrita de mensagens na porta serial via driver de kernel foi desenvolvida uti
 
 ### 1. Visão Geral
 
-O arquivo `sysfs.c` expõe a interface do **SmartLamp** através do `sysfs`, o pseudo-sistema de arquivos do Linux. Nessa camada, os componentes do driver são representados como arquivos virtuais comuns, permitindo leitura e escrita através de comandos padrão de terminal como `cat` e `echo`.
+O arquivo `sysfs.c` expõe a interface do **SmartLamp** através do `sysfs`, o pseudo-sistema de arquivos do Linux.
+Nessa camada, os componentes do driver são representados como arquivos virtuais comuns, permitindo leitura e escrita através de comandos padrão de terminal como `cat` e `echo`.
 
 O driver cria três entradas no diretório `/sys/kernel/smartlamp/`:
 
@@ -338,7 +342,8 @@ O driver cria três entradas no diretório `/sys/kernel/smartlamp/`:
 2. `ldr`
 3. `threshold`
 
-Cada entrada é representada por uma estrutura `struct kobj_attribute`, instanciada através da macro `__ATTR(nome, permissões, attr_show, attr_store)`. Os arquivos só são criados dentro da função `usb_probe()`, exigindo que o ESP32 esteja conectado à porta USB.
+Cada entrada é representada por uma estrutura `struct kobj_attribute`, instanciada através da macro `__ATTR(nome, permissões, attr_show, attr_store)`. 
+Os arquivos só são criados dentro da função `usb_probe()`, exigindo que o ESP32 esteja conectado à porta USB.
 
 ---
 
@@ -373,7 +378,8 @@ static ssize_t attr_show(struct kobject *sys_obj, struct kobj_attribute *attr, c
 
 #### 3.2. `attr_store` (Escrita)
 
-A escrita no arquivo `ldr` é recusada retornando o erro `-EACCES`, uma vez que este representa um sensor exclusivo de leitura. Para o `led`, o valor recebido via string é convertido para inteiro com `kstrtol()` e registrado no log do kernel via `printk`:
+A escrita no arquivo `ldr` é recusada retornando o erro `-EACCES`, uma vez que este representa um sensor exclusivo de leitura.
+Para o `led`, o valor recebido via string é convertido para inteiro com `kstrtol()` e registrado no log do kernel via `printk`:
 
 ```c
 static ssize_t attr_store(struct kobject *sys_obj, struct kobj_attribute *attr, const char *buff, size_t count) {
@@ -397,7 +403,8 @@ static ssize_t attr_store(struct kobject *sys_obj, struct kobj_attribute *attr, 
 
 ### 4. Dificuldades Encontradas
 
-Trabalhar com ponteiros de memória de strings em baixo nível e garantir a identificação correta de qual nó do sysfs estava sendo acessado, já que a mesma função callback atende aos múltiplos atributos do driver.
+Trabalhar com ponteiros de memória de strings em baixo nível e garantir 
+a identificação correta de qual nó do sysfs estava sendo acessado, já que a mesma função callback atende aos múltiplos atributos do driver.
 
 ---
 
@@ -436,4 +443,5 @@ tee: /sys/kernel/smartlamp/ldr: Permission denied
 
 ## 🏁 Conclusão do Projeto
 
-A integração entre o firmware embarcado no ESP32 e o módulo do kernel Linux foi concluída com êxito. A comunicação serial USB permitiu o controle bidirecional dos periféricos de hardware (LED e LDR) diretamente a partir de comandos de terminal no espaço de usuário via interface `sysfs`.
+A integração entre o firmware embarcado no ESP32 e o módulo do kernel Linux foi concluída com êxito. 
+A comunicação serial USB permitiu o controle bidirecional dos periféricos de hardware (LED e LDR) diretamente a partir de comandos de terminal no espaço de usuário via interface `sysfs`.
